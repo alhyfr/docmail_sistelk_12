@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Home, FileText, CheckCircle, UserCheck, Send, Clock, Calendar, User, Building2, FileCheck } from 'lucide-react'
+import { Home, FileText, CheckCircle, UserCheck, Send, Clock, Calendar, User, Building2, FileCheck, Phone } from 'lucide-react'
 import { useParams } from 'react-router'
 import api from '../../lib/Api'
 import dayjs from 'dayjs'
@@ -12,7 +12,6 @@ function Progres() {
     try {
       const response = await api.get(`/cek-surat/${id}`)
       setSuratCek(response.data.data)
-      console.log(response.data.data)
     } catch (error) {
       console.error('Error fetching surat:', error)
     }
@@ -32,11 +31,11 @@ function Progres() {
     // Cek apakah sudah diterima
     const isDiterima = suratCek.status === 'diterima'
     
-    // Cek apakah sudah verifikasi (disposisi ada isi)
-    const isVerifikasi = suratCek.disposisi !== null && suratCek.disposisi !== ''
+    // Cek apakah sudah verifikasi (status_terima = 'diterima')
+    const isVerifikasi = suratCek.status_terima === 'diterima'
     
-    // Cek apakah sudah disposisi
-    const isDisposisi = suratCek.status_terima === 'diterima'
+    // Cek apakah sudah disposisi (disposisi ada isi)
+    const isDisposisi = suratCek.disposisi !== null && suratCek.disposisi !== ''
 
     const timeline = [
       {
@@ -55,7 +54,7 @@ function Progres() {
         timestamp: isVerifikasi ? dayjs(suratCek.updated_at).format('DD-MM-YYYY HH:mm') : null,
         petugas: isVerifikasi ? 'Kepala TU' : null,
         keterangan: isVerifikasi 
-          ? `Sedang dalam proses verifikasi - ${suratCek.disposisi}` 
+          ? 'Surat telah diverifikasi dan siap untuk didisposisi' 
           : 'Menunggu verifikasi',
         completed: isVerifikasi
       },
@@ -63,9 +62,10 @@ function Progres() {
         status: 'disposisi',
         label: 'Disposisi',
         timestamp: isDisposisi ? dayjs(suratCek.updated_at).format('DD-MM-YYYY HH:mm') : null,
-        petugas: isDisposisi ? 'Pimpinan' : null,
+        petugas: isDisposisi ? suratCek.disposisi : null,
+        hp: isDisposisi && suratCek.hp ? suratCek.hp : null,
         keterangan: isDisposisi 
-          ? 'Surat telah didisposisi dan diterima' 
+          ? 'Surat telah didisposisi' 
           : 'Menunggu disposisi dari pimpinan',
         completed: isDisposisi
       }
@@ -79,8 +79,11 @@ function Progres() {
     if (!suratCek) return null
     
     // Prioritas status dari belakang ke depan
-    const isDisposisi = suratCek.status_terima === 'diterima'
-    const isVerifikasi = suratCek.disposisi !== null && suratCek.disposisi !== ''
+    // Cek disposisi dulu (paling akhir)
+    const isDisposisi = suratCek.disposisi !== null && suratCek.disposisi !== ''
+    // Cek verifikasi (status_terima = 'diterima')
+    const isVerifikasi = suratCek.status_terima === 'diterima'
+    // Cek diterima
     const isDiterima = suratCek.status === 'diterima'
     
     // Return status yang sedang aktif (yang terakhir dikerjakan)
@@ -93,6 +96,17 @@ function Progres() {
 
   const timeline = generateTimeline()
   const currentStatus = getCurrentStatus()
+
+  // Calculate progress percentage
+  const calculateProgress = () => {
+    if (!suratCek || !timeline || timeline.length === 0) return 0
+    
+    // Hitung berdasarkan berapa tahap yang completed
+    const completedCount = timeline.filter(t => t.completed).length
+    return Math.round((completedCount / timeline.length) * 100)
+  }
+
+  const progressPercentage = calculateProgress()
 
   const getStatusColor = (status, completed) => {
     if (!completed) return 'bg-gray-300'
@@ -213,7 +227,7 @@ function Progres() {
             <div 
               className='absolute top-6 left-0 h-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full transition-all duration-700 ease-out'
               style={{ 
-                width: timeline && timeline.length > 0 ? `${(timeline.filter(t => t.completed).length / timeline.length) * 100}%` : '0%',
+                width: `${progressPercentage}%`,
                 zIndex: 1
               }}
             />
@@ -279,9 +293,16 @@ function Progres() {
                 )}
 
                 {item.petugas && (
-                  <div className='flex items-center gap-2 text-xs text-gray-500 mb-3'>
+                  <div className='flex items-center gap-2 text-xs text-gray-500 mb-2'>
                     <User className='w-3.5 h-3.5' />
                     <span>{item.petugas}</span>
+                  </div>
+                )}
+
+                {item.hp && (
+                  <div className='flex items-center gap-2 text-xs text-gray-500 mb-3'>
+                    <Phone className='w-3.5 h-3.5' />
+                    <span>{item.hp}</span>
                   </div>
                 )}
 
@@ -312,7 +333,7 @@ function Progres() {
               </div>
               <div className='text-right'>
                 <div className='text-3xl font-bold text-blue-600'>
-                  {timeline && timeline.length > 0 ? Math.round((timeline.filter(t => t.completed).length / timeline.length) * 100) : 0}%
+                  {progressPercentage}%
                 </div>
                 <p className='text-xs text-gray-500'>Completed</p>
               </div>
