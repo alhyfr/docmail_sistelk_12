@@ -30,10 +30,10 @@ function Progres() {
 
     // Cek apakah sudah diterima
     const isDiterima = suratCek.status === 'diterima'
-    
+
     // Cek apakah sudah verifikasi (status_terima = 'diterima')
     const isVerifikasi = suratCek.status_terima === 'diterima'
-    
+
     // Cek apakah sudah disposisi (disposisi ada isi)
     const isDisposisi = suratCek.disposisi !== null && suratCek.disposisi !== ''
 
@@ -43,8 +43,8 @@ function Progres() {
         label: 'Surat Diterima',
         timestamp: isDiterima ? dayjs(suratCek.created_at).format('DD-MM-YYYY HH:mm') : null,
         petugas: isDiterima ? 'Admin TU' : null,
-        keterangan: isDiterima 
-          ? 'Surat telah diterima dan diregistrasi' 
+        keterangan: isDiterima
+          ? 'Surat telah diterima dan diregistrasi'
           : 'Menunggu penerimaan surat',
         completed: isDiterima
       },
@@ -53,8 +53,8 @@ function Progres() {
         label: 'Verifikasi',
         timestamp: isVerifikasi ? dayjs(suratCek.updated_at).format('DD-MM-YYYY HH:mm') : null,
         petugas: isVerifikasi ? 'Kepala TU' : null,
-        keterangan: isVerifikasi 
-          ? 'Surat telah diverifikasi dan siap untuk didisposisi' 
+        keterangan: isVerifikasi
+          ? 'Surat telah diverifikasi dan siap untuk didisposisi'
           : 'Menunggu verifikasi',
         completed: isVerifikasi
       },
@@ -64,8 +64,8 @@ function Progres() {
         timestamp: isDisposisi ? dayjs(suratCek.updated_at).format('DD-MM-YYYY HH:mm') : null,
         petugas: isDisposisi ? suratCek.disposisi : null,
         hp: isDisposisi && suratCek.hp ? suratCek.hp : null,
-        keterangan: isDisposisi 
-          ? 'Surat telah didisposisi' 
+        keterangan: isDisposisi
+          ? suratCek.ket
           : 'Menunggu disposisi dari pimpinan',
         completed: isDisposisi
       }
@@ -77,7 +77,7 @@ function Progres() {
   // Get current active status
   const getCurrentStatus = () => {
     if (!suratCek) return null
-    
+
     // Prioritas status dari belakang ke depan
     // Cek disposisi dulu (paling akhir)
     const isDisposisi = suratCek.disposisi !== null && suratCek.disposisi !== ''
@@ -85,12 +85,12 @@ function Progres() {
     const isVerifikasi = suratCek.status_terima === 'diterima'
     // Cek diterima
     const isDiterima = suratCek.status === 'diterima'
-    
+
     // Return status yang sedang aktif (yang terakhir dikerjakan)
     if (isDisposisi) return 'disposisi'
     if (isVerifikasi) return 'verifikasi'
     if (isDiterima) return 'diterima'
-    
+
     return null
   }
 
@@ -100,7 +100,7 @@ function Progres() {
   // Calculate progress percentage
   const calculateProgress = () => {
     if (!suratCek || !timeline || timeline.length === 0) return 0
-    
+
     // Hitung berdasarkan berapa tahap yang completed
     const completedCount = timeline.filter(t => t.completed).length
     return Math.round((completedCount / timeline.length) * 100)
@@ -112,8 +112,8 @@ function Progres() {
     if (!completed) return 'bg-gray-300'
 
 
-    
-    switch(status) {
+
+    switch (status) {
       case 'diterima':
         return 'bg-blue-500'
       case 'verifikasi':
@@ -126,7 +126,7 @@ function Progres() {
   }
 
   const getStatusIcon = (status) => {
-    switch(status) {
+    switch (status) {
       case 'diterima':
         return <FileText className="w-6 h-6" />
       case 'verifikasi':
@@ -211,135 +211,133 @@ function Progres() {
               </div>
             </div>
 
-        {/* Timeline Status - Horizontal */}
-        <div className='bg-white rounded-2xl shadow-lg p-8 border border-gray-100'>
-          <h3 className='text-xl font-bold text-gray-800 mb-8 flex items-center gap-2'>
-            <CheckCircle className='w-6 h-6 text-blue-600' />
-            Progress Status Surat
-          </h3>
+            {/* Timeline Status - Horizontal */}
+            <div className='bg-white rounded-2xl shadow-lg p-8 border border-gray-100'>
+              <h3 className='text-xl font-bold text-gray-800 mb-8 flex items-center gap-2'>
+                <CheckCircle className='w-6 h-6 text-blue-600' />
+                Progress Status Surat
+              </h3>
 
-          {/* Horizontal Timeline */}
-          <div className='relative mb-12'>
-            {/* Progress Bar Background */}
-            <div className='absolute top-6 left-0 right-0 h-2 bg-gray-200 rounded-full' style={{ zIndex: 0 }} />
-            
-            {/* Active Progress Bar */}
-            <div 
-              className='absolute top-6 left-0 h-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full transition-all duration-700 ease-out'
-              style={{ 
-                width: `${progressPercentage}%`,
-                zIndex: 1
-              }}
-            />
+              {/* Horizontal Timeline */}
+              <div className='relative mb-12'>
+                {/* Progress Bar Background */}
+                <div className='absolute top-6 left-0 right-0 h-2 bg-gray-200 rounded-full' style={{ zIndex: 0 }} />
 
-            {/* Timeline Items */}
-            <div className='relative flex justify-between'>
-              {timeline && timeline.length > 0 && timeline.map((item, index) => (
-                <div key={index} className='flex flex-col items-center' style={{ flex: 1, zIndex: 10 }}>
-                  {/* Status Icon */}
-                  <div className={`flex items-center justify-center w-14 h-14 rounded-full ${getStatusColor(item.status, item.completed)} text-white shadow-lg transition-all duration-300 ${item.completed ? 'scale-110 ring-4 ring-white' : ''} mb-4`}>
-                    {getStatusIcon(item.status)}
+                {/* Active Progress Bar */}
+                <div
+                  className='absolute top-6 left-0 h-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full transition-all duration-700 ease-out'
+                  style={{
+                    width: `${progressPercentage}%`,
+                    zIndex: 1
+                  }}
+                />
+
+                {/* Timeline Items */}
+                <div className='relative flex justify-between'>
+                  {timeline && timeline.length > 0 && timeline.map((item, index) => (
+                    <div key={index} className='flex flex-col items-center' style={{ flex: 1, zIndex: 10 }}>
+                      {/* Status Icon */}
+                      <div className={`flex items-center justify-center w-14 h-14 rounded-full ${getStatusColor(item.status, item.completed)} text-white shadow-lg transition-all duration-300 ${item.completed ? 'scale-110 ring-4 ring-white' : ''} mb-4`}>
+                        {getStatusIcon(item.status)}
+                      </div>
+
+                      {/* Status Label */}
+                      <div className='text-center mb-2'>
+                        <h4 className='font-bold text-gray-800 text-sm mb-1'>{item.label}</h4>
+                        <div className='flex items-center justify-center gap-1'>
+                          {item.completed ? (
+                            <CheckCircle className='w-4 h-4 text-green-500' />
+                          ) : (
+                            <Clock className='w-4 h-4 text-gray-400 animate-pulse' />
+                          )}
+                          <span className='text-xs text-gray-500'>
+                            {item.completed ? 'Selesai' : 'Menunggu'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Detail Cards */}
+              <div className='grid grid-cols-1 md:grid-cols-3 gap-4 mb-8'>
+                {timeline && timeline.length > 0 && timeline.map((item, index) => (
+                  <div
+                    key={index}
+                    className={`bg-gradient-to-br ${item.completed
+                      ? 'from-blue-50 to-indigo-50 border-blue-200'
+                      : 'from-gray-50 to-gray-100 border-gray-200'
+                      } rounded-xl p-5 border-2 transition-all hover:shadow-md ${!item.completed && item.status === currentStatus
+                        ? 'ring-2 ring-blue-400 ring-offset-2'
+                        : ''
+                      }`}
+                  >
+                    <div className='flex items-start gap-3 mb-3'>
+                      <div className={`p-2 rounded-lg ${getStatusColor(item.status, item.completed)} text-white`}>
+                        {getStatusIcon(item.status)}
+                      </div>
+                      <div className='flex-1'>
+                        <h5 className='font-bold text-gray-800 mb-1'>{item.label}</h5>
+                        <p className='text-xs text-gray-600'>{item.keterangan}</p>
+                      </div>
+                    </div>
+
+                    {item.timestamp && (
+                      <div className='flex items-center gap-2 text-xs text-gray-500 mb-2'>
+                        <Calendar className='w-3.5 h-3.5' />
+                        <span>{item.timestamp}</span>
+                      </div>
+                    )}
+
+                    {item.petugas && (
+                      <div className='flex items-center gap-2 text-xs text-gray-500 mb-2'>
+                        <User className='w-3.5 h-3.5' />
+                        <span>{item.petugas}</span>
+                      </div>
+                    )}
+
+                    {item.hp && (
+                      <div className='flex items-center gap-2 text-xs text-gray-500 mb-3'>
+                        <Phone className='w-3.5 h-3.5' />
+                        <span>{item.hp}</span>
+                      </div>
+                    )}
+
+                    {/* Action Button */}
+                    {!item.completed && item.status === currentStatus && (
+                      <button className='w-full mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-semibold flex items-center justify-center gap-2'>
+                        <UserCheck className='w-4 h-4' />
+                        Proses Sekarang
+                      </button>
+                    )}
                   </div>
+                ))}
+              </div>
 
-                  {/* Status Label */}
-                  <div className='text-center mb-2'>
-                    <h4 className='font-bold text-gray-800 text-sm mb-1'>{item.label}</h4>
-                    <div className='flex items-center justify-center gap-1'>
-                      {item.completed ? (
-                        <CheckCircle className='w-4 h-4 text-green-500' />
-                      ) : (
-                        <Clock className='w-4 h-4 text-gray-400 animate-pulse' />
-                      )}
-                      <span className='text-xs text-gray-500'>
-                        {item.completed ? 'Selesai' : 'Menunggu'}
-                      </span>
+              {/* Progress Summary */}
+              <div className='bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200'>
+                <div className='flex items-center justify-between'>
+                  <div className='flex items-center gap-3'>
+                    <div className='p-3 bg-blue-600 rounded-xl'>
+                      <CheckCircle className='w-6 h-6 text-white' />
+                    </div>
+                    <div>
+                      <h4 className='font-bold text-gray-800'>Progress Keseluruhan</h4>
+                      <p className='text-sm text-gray-600'>
+                        {timeline && timeline.length > 0 ? `${timeline.filter(t => t.completed).length} dari ${timeline.length} tahap selesai` : 'Memuat data...'}
+                      </p>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Detail Cards */}
-          <div className='grid grid-cols-1 md:grid-cols-3 gap-4 mb-8'>
-            {timeline && timeline.length > 0 && timeline.map((item, index) => (
-              <div 
-                key={index}
-                className={`bg-gradient-to-br ${
-                  item.completed 
-                    ? 'from-blue-50 to-indigo-50 border-blue-200' 
-                    : 'from-gray-50 to-gray-100 border-gray-200'
-                } rounded-xl p-5 border-2 transition-all hover:shadow-md ${
-                  !item.completed && item.status === currentStatus 
-                    ? 'ring-2 ring-blue-400 ring-offset-2' 
-                    : ''
-                }`}
-              >
-                <div className='flex items-start gap-3 mb-3'>
-                  <div className={`p-2 rounded-lg ${getStatusColor(item.status, item.completed)} text-white`}>
-                    {getStatusIcon(item.status)}
-                  </div>
-                  <div className='flex-1'>
-                    <h5 className='font-bold text-gray-800 mb-1'>{item.label}</h5>
-                    <p className='text-xs text-gray-600'>{item.keterangan}</p>
+                  <div className='text-right'>
+                    <div className='text-3xl font-bold text-blue-600'>
+                      {progressPercentage}%
+                    </div>
+                    <p className='text-xs text-gray-500'>Completed</p>
                   </div>
                 </div>
-
-                {item.timestamp && (
-                  <div className='flex items-center gap-2 text-xs text-gray-500 mb-2'>
-                    <Calendar className='w-3.5 h-3.5' />
-                    <span>{item.timestamp}</span>
-                  </div>
-                )}
-
-                {item.petugas && (
-                  <div className='flex items-center gap-2 text-xs text-gray-500 mb-2'>
-                    <User className='w-3.5 h-3.5' />
-                    <span>{item.petugas}</span>
-                  </div>
-                )}
-
-                {item.hp && (
-                  <div className='flex items-center gap-2 text-xs text-gray-500 mb-3'>
-                    <Phone className='w-3.5 h-3.5' />
-                    <span>{item.hp}</span>
-                  </div>
-                )}
-
-                {/* Action Button */}
-                {!item.completed && item.status === currentStatus && (
-                  <button className='w-full mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-semibold flex items-center justify-center gap-2'>
-                    <UserCheck className='w-4 h-4' />
-                    Proses Sekarang
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* Progress Summary */}
-          <div className='bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200'>
-            <div className='flex items-center justify-between'>
-              <div className='flex items-center gap-3'>
-                <div className='p-3 bg-blue-600 rounded-xl'>
-                  <CheckCircle className='w-6 h-6 text-white' />
-                </div>
-                <div>
-                  <h4 className='font-bold text-gray-800'>Progress Keseluruhan</h4>
-                  <p className='text-sm text-gray-600'>
-                    {timeline && timeline.length > 0 ? `${timeline.filter(t => t.completed).length} dari ${timeline.length} tahap selesai` : 'Memuat data...'}
-                  </p>
-                </div>
-              </div>
-              <div className='text-right'>
-                <div className='text-3xl font-bold text-blue-600'>
-                  {progressPercentage}%
-                </div>
-                <p className='text-xs text-gray-500'>Completed</p>
               </div>
             </div>
-          </div>
-        </div>
           </>
         )}
       </div>
